@@ -1,0 +1,11 @@
+{
+  "name": "crm-project-app",
+  "version": "1.0.0",
+  "description": "Centralized Project Management, HR/Payroll, and CRM System for Construction & Site Management",
+  "private": true,
+  "scripts": {
+    "server": "npm --prefix server start",
+    "client": "npm --prefix client dev",
+    "build:client": "npm --prefix client run build"
+  }
+}
