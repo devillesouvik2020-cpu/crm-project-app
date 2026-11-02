@@ -1,7 +1,10 @@
 import axios from 'axios';
 
-// Use environment variable, fallback to '/api' for production/proxy, or localhost:5000 in direct dev
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
+// Use environment variable (VITE_API_URL = backend base URL, e.g. http://localhost:5000)
+// Appends /api so all route paths stay clean (e.g. /auth/login, /projects)
+const API_BASE = import.meta.env.VITE_API_URL
+  ? `${import.meta.env.VITE_API_URL}/api`
+  : '/api';
 
 const api = axios.create({
   baseURL: API_BASE,
