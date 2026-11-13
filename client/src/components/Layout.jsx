@@ -24,7 +24,7 @@ export default function Layout() {
   const [serverStatus, setServerStatus] = useState('checking'); // 'online', 'connecting', 'error'
 
   const currentPage = pageTitles[location.pathname] || { 
-    title: 'ProjectCRM Suite', 
+    title: 'Project Management Suite', 
     subtitle: 'Centralized Project Management & Site Monitoring' 
   };
 

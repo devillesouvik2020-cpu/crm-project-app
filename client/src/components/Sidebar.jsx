@@ -50,7 +50,7 @@ export default function Sidebar({ isOpen, onClose }) {
           <div className="sidebar-logo">
             <div className="sidebar-logo-icon">PM</div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div className="sidebar-logo-text">ProjectCRM</div>
+              <div className="sidebar-logo-text">Project Management</div>
               <div className="sidebar-logo-sub">Site & Project Suite</div>
             </div>
             {onClose && (
@@ -130,7 +130,7 @@ export default function Sidebar({ isOpen, onClose }) {
             onClick={handleLinkClick}
           >
             <span className="sidebar-link-icon"><HiOutlineHome /></span>
-            <span>Home (Main Dashboard)</span>
+            <span>Home</span>
           </NavLink>
 
           {/* Payroll People */}
@@ -174,7 +174,7 @@ export default function Sidebar({ isOpen, onClose }) {
             onClick={handleLinkClick}
           >
             <span className="sidebar-link-icon"><HiOutlineBriefcase /></span>
-            <span style={{ fontWeight: 550 }}>CRM (Customer Relationship Management)</span>
+            <span style={{ fontWeight: 550 }}>CRM</span>
           </NavLink>
 
           {/* List of Resources */}

@@ -12,13 +12,16 @@ import {
 export default function Dashboard() {
   const navigate = useNavigate();
   const [projects, setProjects] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterStatus, setFilterStatus] = useState('All');
   const [showCreate, setShowCreate] = useState(false);
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(true);
   const [formData, setFormData] = useState({
     projectName: '', address: '', startDate: '', endDate: '',
     projectValue: '', partyName: '', status: 'Active',
-    staffName: '', staffDesignation: ''
+    staffName: '', staffDesignation: '',
+    description: '', payrollPeopleCount: '', attachments: []
   });
 
   useEffect(() => {
@@ -47,6 +50,9 @@ export default function Dashboard() {
         projectValue: Number(formData.projectValue) || 0,
         partyName: formData.partyName,
         status: formData.status,
+        description: formData.description,
+        payrollPeopleCount: Number(formData.payrollPeopleCount) || 0,
+        attachments: formData.attachments,
         assignedStaff: formData.staffName ? [{
           name: formData.staffName,
           designation: formData.staffDesignation
@@ -54,7 +60,7 @@ export default function Dashboard() {
       };
       await projectAPI.create(payload);
       setShowCreate(false);
-      setFormData({ projectName: '', address: '', startDate: '', endDate: '', projectValue: '', partyName: '', status: 'Active', staffName: '', staffDesignation: '' });
+      setFormData({ projectName: '', address: '', startDate: '', endDate: '', projectValue: '', partyName: '', status: 'Active', staffName: '', staffDesignation: '', description: '', payrollPeopleCount: '', attachments: [] });
       setToast({ message: 'Project created successfully!', type: 'success' });
       loadProjects();
     } catch (err) {
@@ -81,6 +87,16 @@ export default function Dashboard() {
     const map = { 'Active': 'status-active', 'Planning': 'status-planning', 'Completed': 'status-completed', 'On Hold': 'status-on-hold' };
     return map[s] || 'status-active';
   };
+
+  // Dashboard stats
+  const filteredProjects = projects.filter(p => {
+    const matchesSearch = !searchQuery ||
+      p.projectName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.address?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.partyName?.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesStatus = filterStatus === 'All' || p.status === filterStatus;
+    return matchesSearch && matchesStatus;
+  });
 
   // Dashboard stats
   const stats = [
@@ -120,6 +136,34 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Search & Filter Bar */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+        <input
+          className="form-input"
+          style={{ flex: 1, minWidth: 200, maxWidth: 340 }}
+          placeholder="🔍 Search projects by name, address, party..."
+          value={searchQuery}
+          onChange={e => setSearchQuery(e.target.value)}
+        />
+        <select
+          className="form-select"
+          style={{ width: 160 }}
+          value={filterStatus}
+          onChange={e => setFilterStatus(e.target.value)}
+        >
+          <option value="All">All Statuses</option>
+          <option value="Active">Active</option>
+          <option value="Planning">Planning</option>
+          <option value="Completed">Completed</option>
+          <option value="On Hold">On Hold</option>
+        </select>
+        {(searchQuery || filterStatus !== 'All') && (
+          <button className="btn btn-secondary btn-sm" onClick={() => { setSearchQuery(''); setFilterStatus('All'); }}>
+            Clear
+          </button>
+        )}
+      </div>
+
       {/* Project Grid */}
       {loading ? (
         <div className="loading-spinner"><div className="spinner"></div></div>
@@ -130,9 +174,15 @@ export default function Dashboard() {
           <div className="empty-state-text">Create your first project to get started with managing construction sites.</div>
           <button className="btn btn-primary" onClick={() => setShowCreate(true)}><HiOutlinePlus /> Create Project</button>
         </div>
+      ) : filteredProjects.length === 0 && projects.length > 0 ? (
+        <div className="empty-state">
+          <div className="empty-state-title">No projects match your search</div>
+          <div className="empty-state-text">Try a different search term or clear filters.</div>
+          <button className="btn btn-secondary" onClick={() => { setSearchQuery(''); setFilterStatus('All'); }}>Clear Filters</button>
+        </div>
       ) : (
         <div className="project-grid">
-          {projects.map(project => (
+          {filteredProjects.map(project => (
             <div className="project-card" key={project._id} onClick={() => navigate(`/project/${project._id}`)}>
               <div className="project-card-image">
                 {project.projectPhotoUrl ? (
@@ -223,6 +273,51 @@ export default function Dashboard() {
                 <div className="form-group">
                   <label className="form-label">6. Party Name (Company)</label>
                   <input className="form-input" placeholder="Client/Company name" value={formData.partyName} onChange={e => setFormData({ ...formData, partyName: e.target.value })} />
+                </div>
+                {/* 7. Description */}
+                <div className="form-group">
+                  <label className="form-label">7. Project Description</label>
+                  <textarea
+                    className="form-textarea"
+                    rows="3"
+                    placeholder="Describe the project scope, objectives, and key deliverables..."
+                    value={formData.description}
+                    onChange={e => setFormData({ ...formData, description: e.target.value })}
+                  />
+                </div>
+                {/* 8. Payroll People Count */}
+                <div className="form-group">
+                  <label className="form-label">8. Payroll People Count</label>
+                  <input
+                    className="form-input"
+                    type="number"
+                    min="0"
+                    placeholder="Number of people on payroll for this project"
+                    value={formData.payrollPeopleCount}
+                    onChange={e => setFormData({ ...formData, payrollPeopleCount: e.target.value })}
+                  />
+                </div>
+                {/* 9. File Upload */}
+                <div className="form-group">
+                  <label className="form-label">9. Project Files (Images / PDF only)</label>
+                  <input
+                    className="form-input"
+                    type="file"
+                    multiple
+                    accept="image/*,.pdf"
+                    onChange={e => {
+                      const files = Array.from(e.target.files);
+                      const readers = files.map(file => new Promise(resolve => {
+                        const reader = new FileReader();
+                        reader.onload = ev => resolve({ name: file.name, url: ev.target.result, type: file.type });
+                        reader.readAsDataURL(file);
+                      }));
+                      Promise.all(readers).then(attachments => setFormData(prev => ({ ...prev, attachments })));
+                    }}
+                  />
+                  <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                    Accepted: images (jpg, png, etc.) and PDF files only
+                  </div>
                 </div>
                 <p style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>
                   Items 7–13 (DPR, Transactions, Site Progress, Tasks, Designs, Files, Meetings) can be managed from the project detail page after creation.

@@ -9,8 +9,10 @@ const leadSchema = new mongoose.Schema({
   projectType: { type: String, default: '' },
   estimatedValue: { type: Number, default: 0 },
   source: { type: String, default: '' },
+  subject: { type: String, default: '' },
   details: { type: String, default: '' },
   status: { type: String, enum: ['New', 'Contacted', 'Qualified', 'Proposal', 'Won', 'Lost'], default: 'New' },
+  attachments: [{ name: String, url: String, type: String }],
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   createdAt: { type: Date, default: Date.now }
 });

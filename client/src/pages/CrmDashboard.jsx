@@ -32,7 +32,9 @@ export default function CrmDashboard({ initialTab = 'leads' }) {
     estimatedValue: '',
     source: 'Direct Enquiry',
     details: '',
-    status: 'New'
+    status: 'New',
+    subject: '',
+    attachments: []
   });
 
   // Quotation Form Data
@@ -44,7 +46,9 @@ export default function CrmDashboard({ initialTab = 'leads' }) {
     amount: '',
     validUntil: '',
     description: '',
-    status: 'Draft'
+    status: 'Draft',
+    referenceNumber: '',
+    attachments: []
   });
 
   // Load data on mount and tab switch
@@ -73,7 +77,7 @@ export default function CrmDashboard({ initialTab = 'leads' }) {
     setLeadForm({
       clientName: '', contact: '', email: '', company: '',
       projectType: '', estimatedValue: '', source: 'Direct Enquiry',
-      details: '', status: 'New'
+      details: '', status: 'New', subject: '', attachments: []
     });
     setEditLeadId(null);
     setShowLeadForm(false);
@@ -94,7 +98,9 @@ export default function CrmDashboard({ initialTab = 'leads' }) {
       estimatedValue: lead.estimatedValue || '',
       source: lead.source || 'Direct Enquiry',
       details: lead.details || '',
-      status: lead.status || 'New'
+      status: lead.status || 'New',
+      subject: lead.subject || '',
+      attachments: lead.attachments || []
     });
     setEditLeadId(lead._id);
     setShowLeadForm(true);
@@ -141,7 +147,8 @@ export default function CrmDashboard({ initialTab = 'leads' }) {
   const resetQuotationForm = () => {
     setQuotationForm({
       clientName: '', projectName: '', contact: '', email: '',
-      amount: '', validUntil: '', description: '', status: 'Draft'
+      amount: '', validUntil: '', description: '', status: 'Draft',
+      referenceNumber: '', attachments: []
     });
     setEditQuotationId(null);
     setShowQuotationForm(false);
@@ -161,7 +168,9 @@ export default function CrmDashboard({ initialTab = 'leads' }) {
       amount: q.amount || '',
       validUntil: q.validUntil ? q.validUntil.split('T')[0] : '',
       description: q.description || '',
-      status: q.status || 'Draft'
+      status: q.status || 'Draft',
+      referenceNumber: q.referenceNumber || '',
+      attachments: q.attachments || []
     });
     setEditQuotationId(q._id);
     setShowQuotationForm(true);
@@ -411,6 +420,18 @@ export default function CrmDashboard({ initialTab = 'leads' }) {
                         </div>
                       </div>
 
+                      {/* Lead Subject */}
+                      <div className="form-group">
+                        <label className="form-label">Lead Subject *</label>
+                        <input
+                          id="lead-subject"
+                          className="form-input"
+                          placeholder="e.g. New office complex construction enquiry"
+                          value={leadForm.subject}
+                          onChange={e => setLeadForm({ ...leadForm, subject: e.target.value })}
+                        />
+                      </div>
+
                       <div className="form-row">
                         <div className="form-group">
                           <label className="form-label">Contact Phone Number *</label>
@@ -509,6 +530,34 @@ export default function CrmDashboard({ initialTab = 'leads' }) {
                         />
                       </div>
 
+                      {/* File Upload */}
+                      <div className="form-group">
+                        <label className="form-label">Attachments (Images / PDF only)</label>
+                        <input
+                          className="form-input"
+                          type="file"
+                          multiple
+                          accept="image/*,.pdf"
+                          onChange={e => {
+                            const files = Array.from(e.target.files);
+                            const readers = files.map(file => new Promise(resolve => {
+                              const reader = new FileReader();
+                              reader.onload = ev => resolve({ name: file.name, url: ev.target.result, type: file.type });
+                              reader.readAsDataURL(file);
+                            }));
+                            Promise.all(readers).then(attachments => setLeadForm(prev => ({ ...prev, attachments })));
+                          }}
+                        />
+                        {leadForm.attachments && leadForm.attachments.length > 0 && (
+                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                            {leadForm.attachments.length} file(s) selected
+                          </div>
+                        )}
+                        <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>
+                          Accepted: images and PDF files only
+                        </div>
+                      </div>
+
                       {/* Required Bottom Save Action Bar */}
                       <div className="crm-bottom-action-bar">
                         <button 
@@ -589,6 +638,12 @@ export default function CrmDashboard({ initialTab = 'leads' }) {
                             </span>
                           </div>
 
+                          {lead.subject && (
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text)', marginTop: 4 }}>
+                              📌 {lead.subject}
+                            </div>
+                          )}
+
                           <div className="crm-item-details">
                             {lead.contact && (
                               <span className="crm-meta-chip">
@@ -608,6 +663,11 @@ export default function CrmDashboard({ initialTab = 'leads' }) {
                             {lead.estimatedValue > 0 && (
                               <span className="crm-meta-chip value-highlight">
                                 Est. Value: {formatCurrency(lead.estimatedValue)}
+                              </span>
+                            )}
+                            {lead.attachments?.length > 0 && (
+                              <span className="crm-meta-chip">
+                                📎 {lead.attachments.length} file{lead.attachments.length > 1 ? 's' : ''}
                               </span>
                             )}
                           </div>
@@ -700,16 +760,27 @@ export default function CrmDashboard({ initialTab = 'leads' }) {
                         </div>
 
                         <div className="form-group">
-                          <label className="form-label">Project / Site Name *</label>
+                          <label className="form-label">Reference Number</label>
                           <input 
-                            id="quote-project-name"
+                            id="quote-reference-number"
                             className="form-input" 
-                            placeholder="e.g. New Town Commercial Complex Phase 1" 
-                            value={quotationForm.projectName} 
-                            onChange={e => setQuotationForm({ ...quotationForm, projectName: e.target.value })} 
-                            required
+                            placeholder="e.g. QT-2024-001 or REF-00123" 
+                            value={quotationForm.referenceNumber} 
+                            onChange={e => setQuotationForm({ ...quotationForm, referenceNumber: e.target.value })} 
                           />
                         </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label className="form-label">Project / Site Name *</label>
+                        <input 
+                          id="quote-project-name"
+                          className="form-input" 
+                          placeholder="e.g. New Town Commercial Complex Phase 1" 
+                          value={quotationForm.projectName} 
+                          onChange={e => setQuotationForm({ ...quotationForm, projectName: e.target.value })} 
+                          required
+                        />
                       </div>
 
                       <div className="form-row">
@@ -790,6 +861,34 @@ export default function CrmDashboard({ initialTab = 'leads' }) {
                         />
                       </div>
 
+                      {/* File Upload */}
+                      <div className="form-group">
+                        <label className="form-label">Attachments (Images / PDF only)</label>
+                        <input
+                          className="form-input"
+                          type="file"
+                          multiple
+                          accept="image/*,.pdf"
+                          onChange={e => {
+                            const files = Array.from(e.target.files);
+                            const readers = files.map(file => new Promise(resolve => {
+                              const reader = new FileReader();
+                              reader.onload = ev => resolve({ name: file.name, url: ev.target.result, type: file.type });
+                              reader.readAsDataURL(file);
+                            }));
+                            Promise.all(readers).then(attachments => setQuotationForm(prev => ({ ...prev, attachments })));
+                          }}
+                        />
+                        {quotationForm.attachments && quotationForm.attachments.length > 0 && (
+                          <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                            {quotationForm.attachments.length} file(s) selected
+                          </div>
+                        )}
+                        <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 2 }}>
+                          Accepted: images and PDF files only
+                        </div>
+                      </div>
+
                       {/* Required Bottom Save Action Bar */}
                       <div className="crm-bottom-action-bar">
                         <button 
@@ -860,6 +959,11 @@ export default function CrmDashboard({ initialTab = 'leads' }) {
                         <div className="crm-item-main">
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                             <span className="crm-item-title">{q.clientName}</span>
+                            {q.referenceNumber && (
+                              <span className="badge badge-secondary" style={{ fontSize: 11, fontWeight: 600 }}>
+                                Ref: {q.referenceNumber}
+                              </span>
+                            )}
                             {q.projectName && (
                               <span className="crm-item-company">
                                 Project: <strong>{q.projectName}</strong>
@@ -882,6 +986,11 @@ export default function CrmDashboard({ initialTab = 'leads' }) {
                             {q.validUntil && (
                               <span className="crm-meta-chip">
                                 <HiOutlineCalendar /> Valid until {formatDate(q.validUntil)}
+                              </span>
+                            )}
+                            {q.attachments?.length > 0 && (
+                              <span className="crm-meta-chip">
+                                📎 {q.attachments.length} file{q.attachments.length > 1 ? 's' : ''}
                               </span>
                             )}
                           </div>
@@ -934,3 +1043,6 @@ export default function CrmDashboard({ initialTab = 'leads' }) {
     </div>
   );
 }
+
+
+

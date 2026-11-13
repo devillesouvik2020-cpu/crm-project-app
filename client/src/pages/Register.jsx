@@ -32,7 +32,7 @@ export default function Register() {
         <div className="auth-card">
           <div className="auth-logo">
             <div className="auth-logo-icon">PM</div>
-            <div className="auth-logo-text">ProjectCRM</div>
+            <div className="auth-logo-text">Project Management</div>
           </div>
           <h1 className="auth-title">Create Account</h1>
           <p className="auth-subtitle">Register as Admin / Project Manager</p>

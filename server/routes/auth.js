@@ -81,4 +81,26 @@ router.put('/change-password', authMiddleware, async (req, res) => {
   }
 });
 
+// Forgot Password (reset by mobile number verification)
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { mobileNumber, newPassword } = req.body;
+    if (!mobileNumber || !newPassword) {
+      return res.status(400).json({ message: 'Mobile number and new password are required' });
+    }
+    if (newPassword.length < 6) {
+      return res.status(400).json({ message: 'Password must be at least 6 characters' });
+    }
+    const user = await User.findOne({ mobileNumber });
+    if (!user) {
+      return res.status(404).json({ message: 'No account found with this mobile number' });
+    }
+    user.passwordHash = await bcrypt.hash(newPassword, 10);
+    await user.save();
+    res.json({ message: 'Password reset successfully. You can now log in with your new password.' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

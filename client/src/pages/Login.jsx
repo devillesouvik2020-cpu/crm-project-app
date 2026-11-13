@@ -31,7 +31,7 @@ export default function Login() {
         <div className="auth-card">
           <div className="auth-logo">
             <div className="auth-logo-icon">PM</div>
-            <div className="auth-logo-text">ProjectCRM</div>
+            <div className="auth-logo-text">Project Management</div>
           </div>
           <h1 className="auth-title">Welcome Back</h1>
           <p className="auth-subtitle">Sign in with your mobile number</p>
@@ -75,6 +75,12 @@ export default function Login() {
             <button id="login-submit-btn" type="submit" className="btn btn-primary btn-full btn-lg" disabled={loading} style={{ marginTop: 6 }}>
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
+
+            <div style={{ textAlign: 'right', marginTop: 10, marginBottom: 2 }}>
+              <Link to="/forgot-password" style={{ fontSize: 13, color: 'var(--color-primary)', textDecoration: 'none', fontWeight: 500 }}>
+                Forgot password?
+              </Link>
+            </div>
 
             {/* Quick Demo Fill for Testing */}
             <div style={{ 

@@ -8,11 +8,14 @@ const router = express.Router();
 // Create project
 router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { projectName, projectPhotoUrl, address, startDate, endDate, projectValue, assignedStaff, partyName, status } = req.body;
+    const { projectName, projectPhotoUrl, address, startDate, endDate, projectValue, assignedStaff, partyName, status, description, payrollPeopleCount, attachments } = req.body;
     const project = new Project({
       projectName, projectPhotoUrl, address, startDate, endDate,
       projectValue, assignedStaff: assignedStaff || [], partyName,
-      status: status || 'Active', createdBy: req.user.id
+      status: status || 'Active', createdBy: req.user.id,
+      description: description || '',
+      payrollPeopleCount: payrollPeopleCount || 0,
+      attachments: attachments || []
     });
     await project.save();
     // Create associated ProjectUpdate document

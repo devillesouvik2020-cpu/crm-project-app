@@ -10,6 +10,8 @@ const quotationSchema = new mongoose.Schema({
   amount: { type: Number, default: 0 },
   validUntil: { type: Date },
   status: { type: String, enum: ['Draft', 'Sent', 'Accepted', 'Rejected'], default: 'Draft' },
+  referenceNumber: { type: String, default: '' },
+  attachments: [{ name: String, url: String, type: String }],
   items: [{
     description: String,
     quantity: Number,

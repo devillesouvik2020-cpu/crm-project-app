@@ -12,6 +12,7 @@ export default function Invite() {
   const [showForm, setShowForm] = useState(false);
   const [toast, setToast] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [waLink, setWaLink] = useState(null);
   const [formData, setFormData] = useState({
     userType: 'Site Engineer', name: '', email: '',
     mobileNumber: '', designation: '', assignedProjectId: ''
@@ -36,7 +37,33 @@ export default function Invite() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
+      const selectedProject = projects.find(p => p._id === formData.assignedProjectId);
       const res = await inviteAPI.create(formData);
+
+      // Build WhatsApp invitation link (wa.me format)
+      const appUrl = window.location.origin;
+      const loginUrl = `${appUrl}/login`;
+      const message = encodeURIComponent(
+        `🏗️ *Project Management App — Invitation*\n\n` +
+        `Hello ${formData.name},\n\n` +
+        `You have been invited to join the *Project Management System* as a *${formData.userType}*.\n\n` +
+        `📋 *Project:* ${selectedProject?.projectName || 'Your assigned project'}\n` +
+        `👤 *Designation:* ${formData.designation || formData.userType}\n\n` +
+        `🔐 *Your Login Credentials:*\n` +
+        `• Mobile Number: ${formData.mobileNumber}\n` +
+        `• Password: ${formData.mobileNumber} (same as mobile number)\n\n` +
+        `🔗 *Login Here:* ${loginUrl}\n\n` +
+        `Please log in and change your password after first login.\n\n` +
+        `_This is an automated invitation from Project Management._`
+      );
+
+      // Clean the mobile number (remove spaces, dashes, +)
+      const cleanMobile = formData.mobileNumber.replace(/[\s\-+]/g, '');
+      // Add India country code if not present
+      const whatsappNumber = cleanMobile.startsWith('91') ? cleanMobile : `91${cleanMobile}`;
+      const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`;
+
+      setWaLink({ url: whatsappUrl, name: formData.name, mobile: formData.mobileNumber });
       setToast({ message: res.data.message, type: 'success' });
       setShowForm(false);
       setFormData({ userType: 'Site Engineer', name: '', email: '', mobileNumber: '', designation: '', assignedProjectId: '' });
@@ -44,6 +71,28 @@ export default function Invite() {
     } catch (err) {
       setToast({ message: err.response?.data?.message || 'Failed to create invite', type: 'error' });
     }
+  };
+
+  const getWhatsAppLinkForInvite = (inv) => {
+    const appUrl = window.location.origin;
+    const loginUrl = `${appUrl}/login`;
+    const projectName = inv.assignedProjectId?.projectName || 'Your assigned project';
+    const message = encodeURIComponent(
+      `🏗️ *Project Management App — Invitation*\n\n` +
+      `Hello ${inv.name},\n\n` +
+      `You have been invited to join the *Project Management System* as a *${inv.userType}*.\n\n` +
+      `📋 *Project:* ${projectName}\n` +
+      `👤 *Designation:* ${inv.designation || inv.userType}\n\n` +
+      `🔐 *Your Login Credentials:*\n` +
+      `• Mobile Number: ${inv.mobileNumber}\n` +
+      `• Password: ${inv.mobileNumber} (same as mobile number)\n\n` +
+      `🔗 *Login Here:* ${loginUrl}\n\n` +
+      `Please log in and change your password after first login.\n\n` +
+      `_This is an automated invitation from Project Management._`
+    );
+    const cleanMobile = (inv.mobileNumber || '').replace(/[\s\-+]/g, '');
+    const whatsappNumber = cleanMobile.startsWith('91') ? cleanMobile : `91${cleanMobile}`;
+    return `https://wa.me/${whatsappNumber}?text=${message}`;
   };
 
   const handleDelete = async (id) => {
@@ -163,8 +212,18 @@ export default function Invite() {
                     <td style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 13 }}><HiOutlineDevicePhoneMobile /> {inv.mobileNumber}</td>
                     <td>{inv.assignedProjectId?.projectName || '—'}</td>
                     <td><span className={`badge ${inv.inviteStatus === 'Accepted' ? 'badge-success' : 'badge-warning'}`}>{inv.inviteStatus}</span></td>
-                    <td>
-                      <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(inv._id)}>
+                    <td style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                      <a
+                        href={getWhatsAppLinkForInvite(inv)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="btn btn-sm"
+                        style={{ background: '#25D366', color: '#fff', border: 'none', padding: '4px 10px', fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 4, textDecoration: 'none', borderRadius: 4 }}
+                        title="Send / Resend Invitation on WhatsApp"
+                      >
+                        📲 WhatsApp
+                      </a>
+                      <button className="btn btn-ghost btn-icon btn-sm" onClick={() => handleDelete(inv._id)} title="Delete Invite">
                         <HiOutlineTrash style={{ color: 'var(--color-danger)' }} />
                       </button>
                     </td>
@@ -175,6 +234,38 @@ export default function Invite() {
           </div>
         )}
       </div>
+
+      {/* WhatsApp Send Modal */}
+      {waLink && (
+        <div className="modal-overlay" onClick={() => setWaLink(null)}>
+          <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 460 }}>
+            <div className="modal-header">
+              <h3 className="modal-title">📱 Send WhatsApp Invitation</h3>
+              <button className="modal-close" onClick={() => setWaLink(null)}>×</button>
+            </div>
+            <div className="modal-body" style={{ textAlign: 'center' }}>
+              <div style={{ fontSize: 44, marginBottom: 12 }}>🎉</div>
+              <p style={{ fontWeight: 600, fontSize: 16, marginBottom: 6 }}>Invite created successfully!</p>
+              <p style={{ fontSize: 14, color: 'var(--color-text-secondary)', marginBottom: 20 }}>
+                Click below to send the official invitation message and login credentials to <strong>{waLink.name}</strong> on WhatsApp (<strong>{waLink.mobile}</strong>).
+              </p>
+              <a
+                href={waLink.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn btn-primary btn-full"
+                style={{ background: '#25D366', border: 'none', fontSize: 15, padding: '12px 20px', display: 'block', textDecoration: 'none', textAlign: 'center', borderRadius: 'var(--radius-sm)', fontWeight: 600 }}
+                onClick={() => setWaLink(null)}
+              >
+                📲 Send via WhatsApp Now
+              </a>
+              <button className="btn btn-secondary btn-full" style={{ marginTop: 10 }} onClick={() => setWaLink(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
