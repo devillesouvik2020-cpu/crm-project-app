@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
 
+const attachmentSchema = new mongoose.Schema({
+  name: { type: String, default: '' },
+  url: { type: String, default: '' },
+  type: { type: String, default: '' }
+}, { _id: false });
+
 const leadSchema = new mongoose.Schema({
   serialNumber: { type: Number },
   clientName: { type: String, required: true },
@@ -12,7 +18,7 @@ const leadSchema = new mongoose.Schema({
   subject: { type: String, default: '' },
   details: { type: String, default: '' },
   status: { type: String, enum: ['New', 'Contacted', 'Qualified', 'Proposal', 'Won', 'Lost'], default: 'New' },
-  attachments: [{ name: String, url: String, type: String }],
+  attachments: [attachmentSchema],
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   createdAt: { type: Date, default: Date.now }
 });

@@ -7,7 +7,8 @@ import {
   HiOutlineCurrencyRupee, HiOutlineUserGroup, HiOutlineDocumentText,
   HiOutlineBanknotes, HiOutlineChartBar, HiOutlineWrench,
   HiOutlinePhoto, HiOutlineFolder, HiOutlineCalendar,
-  HiOutlinePlus, HiOutlineCheckCircle
+  HiOutlinePlus, HiOutlineCheckCircle, HiOutlinePaperClip,
+  HiOutlineXMark, HiOutlineArrowDownTray
 } from 'react-icons/hi2';
 
 export default function ProjectDetail() {
@@ -21,11 +22,39 @@ export default function ProjectDetail() {
   const [loading, setLoading] = useState(true);
 
   // Form states for each type
-  const [dprForm, setDprForm] = useState({ laborCount: '', floorTowerDetails: '', materialNotes: '' });
+  const [dprForm, setDprForm] = useState({ laborCount: '', floorTowerDetails: '', materialNotes: '', attachments: [] });
+  const [previewFile, setPreviewFile] = useState(null);
   const [txnForm, setTxnForm] = useState({ amount: '', type: 'Expense', remarks: '' });
   const [progressForm, setProgressForm] = useState({ progressPercentage: '', remarks: '' });
   const [taskForm, setTaskForm] = useState({ problem: '', plan: '', solution: '', status: 'Open' });
   const [meetingForm, setMeetingForm] = useState({ date: '', agenda: '', participants: '', notes: '' });
+
+  const handleDprFileUpload = (e) => {
+    const files = Array.from(e.target.files);
+    const readers = files.map(file => new Promise(resolve => {
+      const reader = new FileReader();
+      reader.onload = ev => resolve({
+        name: file.name,
+        url: ev.target.result,
+        type: file.type,
+        size: file.size
+      });
+      reader.readAsDataURL(file);
+    }));
+    Promise.all(readers).then(newAttachments => {
+      setDprForm(prev => ({
+        ...prev,
+        attachments: [...(prev.attachments || []), ...newAttachments]
+      }));
+    });
+  };
+
+  const removeDprAttachment = (index) => {
+    setDprForm(prev => ({
+      ...prev,
+      attachments: prev.attachments.filter((_, idx) => idx !== index)
+    }));
+  };
 
   useEffect(() => {
     loadData();
@@ -51,8 +80,13 @@ export default function ProjectDetail() {
     try {
       switch (activeTab) {
         case 'dpr':
-          await projectAPI.addDPR(id, { laborCount: Number(dprForm.laborCount), floorTowerDetails: dprForm.floorTowerDetails, materialNotes: dprForm.materialNotes });
-          setDprForm({ laborCount: '', floorTowerDetails: '', materialNotes: '' });
+          await projectAPI.addDPR(id, {
+            laborCount: Number(dprForm.laborCount),
+            floorTowerDetails: dprForm.floorTowerDetails,
+            materialNotes: dprForm.materialNotes,
+            attachments: dprForm.attachments || []
+          });
+          setDprForm({ laborCount: '', floorTowerDetails: '', materialNotes: '', attachments: [] });
           break;
         case 'transaction':
           await projectAPI.addTransaction(id, { amount: Number(txnForm.amount), type: txnForm.type, remarks: txnForm.remarks });
@@ -204,6 +238,75 @@ export default function ProjectDetail() {
                     <label className="form-label">Material Notes</label>
                     <textarea className="form-textarea" placeholder="Material updates..." value={dprForm.materialNotes} onChange={e => setDprForm({ ...dprForm, materialNotes: e.target.value })}></textarea>
                   </div>
+                  <div className="form-group">
+                    <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <HiOutlinePhoto /> Site Photos & Attachments (Images, PDF, Documents)
+                    </label>
+                    <input
+                      className="form-input"
+                      type="file"
+                      multiple
+                      accept="image/*,.pdf,.doc,.docx"
+                      onChange={handleDprFileUpload}
+                    />
+                    <div style={{ fontSize: 12, color: 'var(--color-text-muted)', marginTop: 4 }}>
+                      Attach daily site progress photos, delivery challans, inspection photos, or PDF reports.
+                    </div>
+                    {dprForm.attachments && dprForm.attachments.length > 0 && (
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 10 }}>
+                        {dprForm.attachments.map((att, idx) => (
+                          <div
+                            key={idx}
+                            style={{
+                              position: 'relative',
+                              padding: '6px 8px',
+                              border: '1px solid var(--color-border)',
+                              borderRadius: 'var(--radius-sm, 6px)',
+                              background: 'var(--color-bg, #f8f9fa)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              maxWidth: 240
+                            }}
+                          >
+                            {att.type?.startsWith('image/') || att.url?.startsWith('data:image/') ? (
+                              <img
+                                src={att.url}
+                                alt={att.name}
+                                style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 4, display: 'block' }}
+                              />
+                            ) : (
+                              <div style={{ fontSize: 22, padding: '0 2px' }}>📄</div>
+                            )}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={att.name}>
+                                {att.name}
+                              </div>
+                              <div style={{ fontSize: 11, color: 'var(--color-text-muted)' }}>
+                                {att.type?.startsWith('image/') ? 'Photo' : 'Document'}
+                              </div>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeDprAttachment(idx)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                cursor: 'pointer',
+                                color: 'var(--color-danger, #e53935)',
+                                padding: 2,
+                                display: 'flex',
+                                alignItems: 'center'
+                              }}
+                              title="Remove file"
+                            >
+                              <HiOutlineXMark style={{ fontSize: 16 }} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
               {activeTab === 'transaction' && (
@@ -300,11 +403,76 @@ export default function ProjectDetail() {
         <div className="card-body" style={{ padding: 0 }}>
           {activeTab === 'dpr' && (
             updates?.dprs?.length > 0 ? updates.dprs.slice().reverse().map((d, i) => (
-              <div className="list-item" key={i}>
+              <div className="list-item" key={i} style={{ alignItems: 'flex-start' }}>
                 <div className="list-item-number">{updates.dprs.length - i}</div>
-                <div className="list-item-content">
+                <div className="list-item-content" style={{ flex: 1 }}>
                   <div className="list-item-title">{d.laborCount} workers — {d.floorTowerDetails || 'No details'}</div>
                   <div className="list-item-sub">{d.materialNotes || 'No material notes'} • {formatDate(d.date)}</div>
+
+                  {/* Photos & Attachments */}
+                  {d.attachments && d.attachments.length > 0 && (
+                    <div style={{ marginTop: 10 }}>
+                      <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--color-text-secondary)', marginBottom: 6, display: 'flex', alignItems: 'center', gap: 4 }}>
+                        <HiOutlinePaperClip /> {d.attachments.length} Photo / File Attachment{d.attachments.length > 1 ? 's' : ''}:
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {d.attachments.map((att, aIdx) => {
+                          const isImg = att.type?.startsWith('image/') || att.url?.startsWith('data:image/');
+                          return (
+                            <div
+                              key={aIdx}
+                              style={{
+                                border: '1px solid var(--color-border-light, #e0e0e0)',
+                                borderRadius: 6,
+                                padding: isImg ? 4 : '6px 10px',
+                                background: 'var(--color-card, #fff)',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 6,
+                                cursor: 'pointer',
+                                transition: 'box-shadow 0.15s, transform 0.15s'
+                              }}
+                              onClick={() => setPreviewFile(att)}
+                              title={`Click to preview ${att.name || 'file'}`}
+                            >
+                              {isImg ? (
+                                <div style={{ position: 'relative' }}>
+                                  <img
+                                    src={att.url}
+                                    alt={att.name || 'Site Photo'}
+                                    style={{ width: 64, height: 64, objectFit: 'cover', borderRadius: 4, display: 'block' }}
+                                  />
+                                  <div
+                                    style={{
+                                      position: 'absolute',
+                                      bottom: 2,
+                                      right: 2,
+                                      background: 'rgba(0,0,0,0.6)',
+                                      color: '#fff',
+                                      borderRadius: 3,
+                                      padding: '1px 3px',
+                                      fontSize: 9,
+                                      display: 'flex',
+                                      alignItems: 'center'
+                                    }}
+                                  >
+                                    <HiOutlinePhoto />
+                                  </div>
+                                </div>
+                              ) : (
+                                <>
+                                  <span style={{ fontSize: 18 }}>📄</span>
+                                  <span style={{ fontSize: 12, fontWeight: 500, maxWidth: 140, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                    {att.name || 'Document'}
+                                  </span>
+                                </>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )) : <div className="empty-state"><div className="empty-state-text">No DPR entries yet</div></div>
@@ -366,6 +534,72 @@ export default function ProjectDetail() {
           )}
         </div>
       </div>
+
+      {/* File / Photo Preview Lightbox Modal */}
+      {previewFile && (
+        <div
+          className="modal-overlay"
+          style={{ zIndex: 1000 }}
+          onClick={() => setPreviewFile(null)}
+        >
+          <div
+            className="modal"
+            onClick={e => e.stopPropagation()}
+            style={{ maxWidth: 750, width: '90%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}
+          >
+            <div className="modal-header">
+              <h3 className="modal-title" style={{ fontSize: 15, display: 'flex', alignItems: 'center', gap: 6 }}>
+                {previewFile.type?.startsWith('image/') || previewFile.url?.startsWith('data:image/') ? <HiOutlinePhoto /> : <HiOutlinePaperClip />}
+                {previewFile.name || 'DPR Attachment'}
+              </h3>
+              <button className="modal-close" onClick={() => setPreviewFile(null)}>×</button>
+            </div>
+            <div className="modal-body" style={{ textAlign: 'center', overflow: 'auto', padding: 16 }}>
+              {previewFile.type?.startsWith('image/') || previewFile.url?.startsWith('data:image/') ? (
+                <div>
+                  <img
+                    src={previewFile.url}
+                    alt={previewFile.name || 'Site Photo'}
+                    style={{ maxWidth: '100%', maxHeight: '65vh', objectFit: 'contain', borderRadius: 6, boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
+                  />
+                  <div style={{ marginTop: 8, fontSize: 13, color: 'var(--color-text-secondary)' }}>
+                    {previewFile.name}
+                  </div>
+                </div>
+              ) : (
+                <div style={{ padding: '30px 20px' }}>
+                  <div style={{ fontSize: 54, marginBottom: 12 }}>📄</div>
+                  <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 8 }}>{previewFile.name || 'Document'}</div>
+                  <div style={{ fontSize: 13, color: 'var(--color-text-muted)', marginBottom: 20 }}>
+                    Attached file for Daily Progress Report (DPR)
+                  </div>
+                  <a
+                    href={previewFile.url}
+                    download={previewFile.name || 'dpr-attachment'}
+                    className="btn btn-primary"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}
+                  >
+                    <HiOutlineArrowDownTray /> Download / View File
+                  </a>
+                </div>
+              )}
+            </div>
+            <div className="modal-footer" style={{ display: 'flex', justifyContent: 'space-between' }}>
+              <a
+                href={previewFile.url}
+                download={previewFile.name || 'dpr-attachment'}
+                className="btn btn-secondary btn-sm"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: 4, textDecoration: 'none' }}
+              >
+                <HiOutlineArrowDownTray /> Download
+              </a>
+              <button className="btn btn-primary btn-sm" onClick={() => setPreviewFile(null)}>
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

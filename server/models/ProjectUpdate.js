@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
 
+const attachmentSchema = new mongoose.Schema({
+  name: { type: String, default: '' },
+  url: { type: String, default: '' },
+  type: { type: String, default: '' }
+}, { _id: false });
+
 const projectUpdateSchema = new mongoose.Schema({
   projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', required: true },
   dprs: [{
@@ -7,6 +13,7 @@ const projectUpdateSchema = new mongoose.Schema({
     laborCount: { type: Number, default: 0 },
     floorTowerDetails: { type: String, default: '' },
     materialNotes: { type: String, default: '' },
+    attachments: [attachmentSchema],
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
   }],
   transactions: [{

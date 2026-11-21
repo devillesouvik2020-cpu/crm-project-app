@@ -1,5 +1,11 @@
 const mongoose = require('mongoose');
 
+const attachmentSchema = new mongoose.Schema({
+  name: { type: String, default: '' },
+  url: { type: String, default: '' },
+  type: { type: String, default: '' }
+}, { _id: false });
+
 const quotationSchema = new mongoose.Schema({
   serialNumber: { type: Number },
   clientName: { type: String, required: true },
@@ -11,7 +17,7 @@ const quotationSchema = new mongoose.Schema({
   validUntil: { type: Date },
   status: { type: String, enum: ['Draft', 'Sent', 'Accepted', 'Rejected'], default: 'Draft' },
   referenceNumber: { type: String, default: '' },
-  attachments: [{ name: String, url: String, type: String }],
+  attachments: [attachmentSchema],
   items: [{
     description: String,
     quantity: Number,
